@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun Run Donation Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fdf4ff;
+            background-image: radial-gradient(#fbcfe8 2px, transparent 2px);
+            background-size: 30px 30px;
+        }
+
+        .student-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .student-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        #modal-backdrop {
+            backdrop-filter: blur(5px);
+        }
+
+        /* Fun shake animation for errors */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+        }
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 p-4 sm:p-8">
+
+    <!-- Header Section -->
+    <header class="max-w-7xl mx-auto text-center mb-12 mt-4">
+        <div class="inline-block bg-white px-8 py-6 rounded-3xl shadow-xl border-4 border-yellow-400 mb-6 transform rotate-1">
+            <h1 class="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 tracking-tight">
+                🏃‍♂️ Daniel Webster Fun Run 🏃‍♀️
+            </h1>
+        </div>
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 max-w-2xl mx-auto shadow-sm border-2 border-pink-200">
+            <p class="text-lg sm:text-xl font-bold text-gray-700">
+                Click on a student and enter their birthday to access their donation page!
+            </p>
+        </div>
+    </header>
+
+    <!-- Student Grid -->
+    <main class="max-w-7xl mx-auto pb-12">
+        <div id="student-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 xl:gap-8">
+            <!-- Student cards will be injected here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Birthday Verification Modal -->
+    <div id="birthday-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div id="modal-backdrop" class="absolute inset-0 bg-gray-900/60 transition-opacity"></div>
+        
+        <!-- Modal Content -->
+        <div class="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full border-4 border-blue-400 transform transition-all">
+            <button id="close-modal-btn" class="absolute top-4 right-4 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 rounded-full p-2 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            
+            <div class="text-center mb-8 mt-2">
+                <div class="text-6xl mb-4 inline-block transform -rotate-12">🎂</div>
+                <h2 class="text-3xl font-extrabold text-gray-800 mb-2" id="modal-student-name">Student Name</h2>
+                <p class="text-base text-gray-500 font-semibold">Please enter their birthday to proceed.</p>
+            </div>
+
+            <form id="birthday-form" class="space-y-6">
+                <div>
+                    <input type="date" id="birthday-input" required
+                        class="w-full px-5 py-4 border-4 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-xl font-bold text-center text-gray-700">
+                </div>
+                
+                <!-- Error Message Container -->
+                <div id="error-message" class="hidden bg-red-50 border-l-8 border-red-500 text-red-700 p-4 rounded-xl shadow-sm" role="alert">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="block sm:inline font-bold">Incorrect birthday. Please try again.</span>
+                    </div>
+                </div>
+
+                <button type="submit" 
+                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-extrabold text-xl py-4 px-6 rounded-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95 border-b-4 border-purple-800">
+                    Unlock Page 🚀
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        const students = [
+            { name: "Kazzandra Alyanna A.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/f105c097-97bc-44ca-adec-e68ab2fd3ca1/", dob: "2017-10-26" },
+            { name: "Ghiyath A.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/c858887b-c0b5-44d3-acb7-9d84d9ca7d12/", dob: "2018-01-09" },
+            { name: "Sofia Faith A.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/fefd7741-a013-42c5-9772-a38cd278efe6/", dob: "2017-11-07" },
+            { name: "Austin A.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/f31d01ff-1df5-4b88-8cee-b805ed51796a/", dob: "2017-12-04" },
+            { name: "Laila A.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/abeb7023-94b3-4d3b-b3c2-41a60d570d00/", dob: "2018-06-28" },
+            { name: "Wynter Arya B.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/c40434dc-732f-4747-aaaa-a63cfe3d0678/", dob: "2018-07-27" },
+            { name: "Christian B.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/673f85f3-d793-4fcb-a428-d37460dfa94f/", dob: "2018-05-23" },
+            { name: "Jackson C.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/a2493037-5220-4d28-85ba-ead26bf3ab2c/", dob: "2017-12-23" },
+            { name: "Angie C.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/35a95111-34d5-4712-921e-6505123fdc3c/", dob: "2018-01-02" },
+            { name: "Rhys D.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/a8ce1533-a7ed-4634-a329-a413253b517c/", dob: "2017-10-22" },
+            { name: "Callie Aiophie G.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/a150445d-1e23-4813-a2b8-0810874b7c52/", dob: "2018-01-06" },
+            { name: "Sosa H.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/0c2145ef-f4e6-42fc-b328-4fe2c5f2624d/", dob: "2018-07-07" },
+            { name: "Thamudaya H.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/1de9b1be-4209-4850-a0da-9fcef1eba7c2/", dob: "2017-11-11" },
+            { name: "Malakai J.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/78c4aa9e-64fd-4da4-af01-c2c432de2942/", dob: "2018-03-21" },
+            { name: "Alexa L.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/26863e28-cc97-4aa2-b77d-fd7a67f98538/", dob: "2018-05-19" },
+            { name: "Jayden L.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/6b0c1470-0174-415e-b7ea-6295e4d299d4/", dob: "2018-05-19" },
+            { name: "Bosco M.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/2a5a3ed3-ae66-4389-9ffd-807776990339/", dob: "2018-06-11" },
+            { name: "Marie Autumn M.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/23c392f0-eff7-4b13-813c-00141b86b64a/", dob: "2018-02-13" },
+            { name: "Aylan O.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/93c9ef36-c8f7-4254-96ea-62607bf0f504/", dob: "2018-01-21" },
+            { name: "Steven O.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/75f3954a-6875-4d6c-a57d-9dc8c7cffaa4/", dob: "2018-08-24" },
+            { name: "Santiago R.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/64ee2809-f8cd-4b06-91f0-3913dffa9cac/", dob: "2018-05-05" },
+            { name: "Edwin R.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/cf14b62d-943b-474e-9eb1-4a59510c6e08/", dob: "2017-09-18" },
+            { name: "Javier R.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/2595a2a4-20ae-4173-aa8c-ada10c07de66/", dob: "2018-04-18" },
+            { name: "Gregory W.", link: "https://app.mydonatepage.com/fundraisers/danielwebster26/participant-management/07a040aa-ea81-465a-871a-5c6a22b1713e/", dob: "2018-02-21" }
+        ];
+
+        let activeStudent = null;
+
+        const gridContainer = document.getElementById('student-grid');
+        const modal = document.getElementById('birthday-modal');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalStudentName = document.getElementById('modal-student-name');
+        const birthdayForm = document.getElementById('birthday-form');
+        const birthdayInput = document.getElementById('birthday-input');
+        const errorMessage = document.getElementById('error-message');
+
+        const cardThemes = [
+            { border: 'border-pink-400', bg: 'bg-pink-50', icon: '🌟' },
+            { border: 'border-blue-400', bg: 'bg-blue-50', icon: '🎈' },
+            { border: 'border-green-400', bg: 'bg-green-50', icon: '🦖' },
+            { border: 'border-yellow-400', bg: 'bg-yellow-50', icon: '🎨' },
+            { border: 'border-purple-400', bg: 'bg-purple-50', icon: '🚀' }
+        ];
+
+        function renderStudents() {
+            students.forEach((student, index) => {
+                const theme = cardThemes[index % cardThemes.length];
+                
+                const card = document.createElement('button');
+                // Use a button for better accessibility and interaction
+                card.className = `student-card w-full text-left rounded-3xl border-b-8 border-t-2 border-l-2 border-r-2 ${theme.border} ${theme.bg} p-6 flex items-center space-x-4 cursor-pointer outline-none focus:ring-4 focus:ring-blue-300`;
+                
+                card.innerHTML = `
+                    <div class="w-16 h-16 shrink-0 bg-white rounded-full flex items-center justify-center shadow-inner border-2 border-gray-100 text-3xl">
+                        ${theme.icon}
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-xl font-extrabold text-gray-800 leading-tight">${student.name}</h3>
+                        <span class="inline-block mt-2 text-sm font-bold text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">View Page →</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => openModal(student));
+                gridContainer.appendChild(card);
+            });
+        }
+
+        function openModal(student) {
+            activeStudent = student;
+            modalStudentName.textContent = student.name;
+            birthdayInput.value = '';
+            errorMessage.classList.add('hidden');
+            errorMessage.classList.remove('shake');
+            modal.classList.remove('hidden');
+            
+            // Focus input after modal is visible
+            setTimeout(() => {
+                birthdayInput.focus();
+            }, 50);
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            activeStudent = null;
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', closeModal);
+        
+        // Handle form submission and redirect
+        birthdayForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // STOP the form from doing a standard page reload
+            
+            const enteredDate = birthdayInput.value;
+            
+            if (activeStudent && enteredDate === activeStudent.dob) {
+                // SUCCESS: Redirect logic
+                errorMessage.classList.add('hidden');
+                
+                // Option 1: Open in new tab (Recommended so they don't lose the portal)
+                window.open(activeStudent.link, '_blank');
+                
+                // Option 2: If you want to force it in the same window instead, uncomment the line below:
+                // window.location.href = activeStudent.link;
+                
+                closeModal(); // Close the modal upon success
+            } else {
+                // FAILURE: Show error
+                errorMessage.classList.remove('hidden');
+                errorMessage.classList.remove('shake');
+                
+                // Trigger reflow to restart animation
+                void errorMessage.offsetWidth; 
+                
+                errorMessage.classList.add('shake');
+                birthdayInput.value = ''; // clear input for retry
+                birthdayInput.focus();
+            }
+        });
+
+        // Initialize
+        window.onload = renderStudents;
+    </script>
+</body>
+</html>
